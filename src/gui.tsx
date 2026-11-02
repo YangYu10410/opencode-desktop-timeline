@@ -47,6 +47,7 @@ const css = `
   width: 23.5em;
   max-height: 58vh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0.7em;
   border-radius: 1em;
   background: var(--oc-bg, #fff);
@@ -446,7 +447,18 @@ function Rail() {
               {(m) => <div class="oc-tick" classList={{ "is-active": active() === m.id }} />}
             </For>
           </div>
-          <div class="oc-card">
+          <div
+            class="oc-card"
+            onWheel={(event) => {
+              const el = event.currentTarget
+              const canScroll = el.scrollHeight > el.clientHeight + 1
+              const atTop = el.scrollTop <= 0 && event.deltaY < 0
+              const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1 && event.deltaY > 0
+              // 卡片滚不动时别把滚轮传给页面
+              if (!canScroll || atTop || atBottom) event.preventDefault()
+              event.stopPropagation()
+            }}
+          >
             <For each={users()}>
               {(m) => (
                 <button
