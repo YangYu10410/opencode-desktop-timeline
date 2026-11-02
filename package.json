@@ -1,0 +1,45 @@
+{
+  "name": "opencode-desktop-timeline",
+  "version": "0.1.0",
+  "description": "DeepSeek-style message timeline rail for OpenCode Desktop: one tick per user message, click to jump.",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YangYu10410/opencode-desktop-timeline.git"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "opencode-desktop",
+    "timeline",
+    "navigation"
+  ],
+  "engines": {
+    "opencode": ">=2.2.5"
+  },
+  "exports": {
+    ".": "./index.ts",
+    "./gui-experimental": "./gui-experimental.cjs"
+  },
+  "files": [
+    "index.ts",
+    "gui-experimental.cjs"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "prepublishOnly": "npm run build"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "dependencies": {
+    "@opencode/plugin": "^2.2.5"
+  },
+  "devDependencies": {
+    "solid-js": "^1.9.0",
+    "vite": "^7.0.0",
+    "vite-plugin-solid": "^2.11.0"
+  }
+}
