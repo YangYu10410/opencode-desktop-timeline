@@ -34,11 +34,14 @@ opencode plugin add opencode-desktop-timeline
 }
 ```
 
-不经过 npm，也可以直接从 GitHub 安装：
+不经过 npm，也可以手动克隆到插件目录：
 
 ```sh
-opencode plugin add github:YangYu10410/opencode-desktop-timeline
+git clone https://github.com/YangYu10410/opencode-desktop-timeline.git \
+  ~/.config/opencode/plugins/opencode-desktop-timeline
 ```
+
+然后重启 OpenCode。注意：OpenCode 2.2.5 的 `opencode plugin add github:...` 有已知问题（报 `git dep preparation failed`），用上面的克隆方式即可。
 
 装完重启 OpenCode，桌面端按 `Ctrl+R`。
 
