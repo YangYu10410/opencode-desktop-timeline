@@ -18,6 +18,7 @@ const css = `
   z-index: 2147483000;
   display: flex;
   align-items: center;
+  color: var(--v2-text-text-base, currentColor);
   font: inherit;
 }
 .oc-ticks {
@@ -37,7 +38,7 @@ const css = `
 }
 .oc-tick.is-active {
   width: 18px;
-  background: var(--oc-accent, #4d6bfe);
+  background: var(--v2-icon-icon-accent, var(--oc-accent, #4d6bfe));
 }
 .oc-rail:hover .oc-ticks { opacity: 0; pointer-events: none; }
 .oc-card {
@@ -50,12 +51,18 @@ const css = `
   overscroll-behavior: contain;
   padding: 0.7em;
   border-radius: 1em;
-  background: var(--oc-bg, #fff);
-  box-shadow: 0 14px 44px rgba(15,15,20,.16), 0 0 0 1px rgba(15,15,20,.05);
+  background: var(--v2-background-bg-base, var(--oc-bg, Canvas));
+  color: var(--v2-text-text-base, CanvasText);
+  box-shadow: var(--v2-elevation-floating, var(--v2-elevation-raised, 0 14px 44px rgba(15,15,20,.16))),
+              0 0 0 1px var(--v2-border-border-base, transparent);
+  scrollbar-color: var(--v2-text-text-muted, #888) transparent;
   transform: translate(10px, -50%);
   opacity: 0;
   pointer-events: none;
   transition: opacity .16s ease, transform .16s ease;
+}
+[data-color-scheme="dark"] .oc-card {
+  background: var(--v2-background-bg-layer-01, var(--v2-background-bg-base, var(--oc-bg, Canvas)));
 }
 .oc-rail:hover .oc-card {
   opacity: 1;
@@ -78,7 +85,7 @@ const css = `
   cursor: pointer;
 }
 .oc-item:hover { background: color-mix(in srgb, currentColor 6%, transparent); }
-.oc-item.is-active { opacity: 1; color: var(--oc-accent, #4d6bfe); }
+.oc-item.is-active { opacity: 1; color: var(--v2-icon-icon-accent, var(--oc-accent, #4d6bfe)); }
 .oc-label {
   flex: 1;
   min-width: 0;
@@ -97,13 +104,14 @@ const css = `
 }
 .oc-item.is-active .oc-mark {
   width: 16px;
-  background: var(--oc-accent, #4d6bfe);
+  background: var(--v2-icon-icon-accent, var(--oc-accent, #4d6bfe));
 }
 `
 
 function Rail() {
   const ctx = usePlugin()
   const [active, setActive] = createSignal<string>()
+  const [viewportHeight, setViewportHeight] = createSignal(window.innerHeight)
   let hold = false
 
   const session = () => ctx.sessions.current()
@@ -124,6 +132,16 @@ function Rail() {
     }
     return undefined
   }
+
+  // 刻度总高不超过视口 62%；条数多时先缩 gap，再整体纵向缩放，避免顶出屏幕
+  const railMetrics = createMemo(() => {
+    const n = users().length
+    if (n < 2) return { gap: "0.64em", scale: 1 }
+    const budget = Math.max(120, Math.min(viewportHeight() * 0.62, 640) - 24)
+    const gap = Math.min(10, Math.max(2, (budget - n * 2) / (n - 1)))
+    const natural = n * 2 + (n - 1) * gap
+    return { gap: `${gap}px`, scale: natural > budget ? budget / natural : 1 }
+  })
 
   // 宿主导航判断「当前消息」的规则：视口顶部往下 100px 处的那一行。
   // 跳转步数必须用它算起点，不能用侧边栏高亮（贴底时高亮在最后一条，但宿主起点在顶部那条）
@@ -170,7 +188,6 @@ function Rail() {
     setTimeout(() => {
       if (!el.isConnected) return
       const delta = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top
-      console.debug("[timeline] align", Math.round(offset), Math.round(delta), Math.round(scroller.scrollTop))
       if (Math.abs(delta - offset) > 2) align()
     }, 180)
   }
@@ -261,7 +278,6 @@ function Rail() {
   const jumpDom = async (id: string) => {
     setActive(id)
     hold = true
-    const t0 = performance.now()
     const mounted = document.getElementById("message-" + id)
     if (mounted) {
       reveal(mounted)
@@ -273,13 +289,11 @@ function Rail() {
       const el = document.getElementById("message-" + id)
       if (el) {
         reveal(el)
-        console.debug("[timeline] jump ok", i, Math.round(performance.now() - t0))
         return
       }
       if (!jumpOnce(id)) return
       await new Promise((resolve) => setTimeout(resolve, 40))
     }
-    console.debug("[timeline] jump fail", Math.round(performance.now() - t0))
   }
 
   // 宿主的 hash 深链可用时不会走到这里；失败时退回原来的步进
@@ -310,7 +324,6 @@ function Rail() {
   const go = async (id: string) => {
     if (!users().some((m) => m.id === id)) return
     const seq = ++jumpSeq
-    const t0 = performance.now()
     setActive(id)
     hold = true
 
@@ -343,11 +356,6 @@ function Rail() {
       await frame()
       if (seq !== jumpSeq) return
       alignTop(el)
-      console.debug(
-        "[timeline] jump",
-        Math.round(performance.now() - t0),
-        Math.round(el.getBoundingClientRect().top - scroller.getBoundingClientRect().top),
-      )
     } finally {
       if (seq === jumpSeq) content.style.visibility = previous
     }
@@ -424,6 +432,8 @@ function Rail() {
     document.addEventListener("touchstart", onGesture, { passive: true, capture: true })
     document.addEventListener("pointerdown", onGesture, true)
     document.addEventListener("keydown", onKey, true)
+    const onResize = () => setViewportHeight(window.innerHeight)
+    window.addEventListener("resize", onResize)
     const timer = window.setInterval(update, 800)
     update()
 
@@ -433,6 +443,7 @@ function Rail() {
       document.removeEventListener("touchstart", onGesture, true)
       document.removeEventListener("pointerdown", onGesture, true)
       document.removeEventListener("keydown", onKey, true)
+      window.removeEventListener("resize", onResize)
       cancelAnimationFrame(frame)
       window.clearInterval(timer)
     })
@@ -442,7 +453,10 @@ function Rail() {
     <Show when={session()}>
       <Portal mount={document.body}>
         <div class="oc-rail">
-          <div class="oc-ticks">
+          <div
+            class="oc-ticks"
+            style={{ gap: railMetrics().gap, transform: `scaleY(${railMetrics().scale})` }}
+          >
             <For each={users()}>
               {(m) => <div class="oc-tick" classList={{ "is-active": active() === m.id }} />}
             </For>

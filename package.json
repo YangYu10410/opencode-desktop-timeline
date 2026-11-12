@@ -1,6 +1,6 @@
 {
   "name": "opencode-desktop-timeline",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "DeepSeek-style message timeline rail for OpenCode Desktop: one tick per user message, click to jump.",
   "license": "MIT",
   "type": "module",
